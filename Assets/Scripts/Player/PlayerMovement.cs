@@ -10,11 +10,17 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintMultiplier = 1.5f;
+    [SerializeField] private float acceleration = 5f;
+    [SerializeField] private float deceleration = 5f;
 
     [Header("Dash Settings")]
     [SerializeField] private float dashPower = 15f;
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 1f;
+
+    // Debug variable to monitor current speed in Inspector
+    [Header("Debug")]
+    [SerializeField] private float debugCurrentSpeed;
 
 
     private Rigidbody2D rb;
@@ -23,10 +29,14 @@ public class PlayerMovement : MonoBehaviour
     private bool isDashing = false;
     private bool canDash = true;
 
+    private float targetSpeed;
+    private float currentSpeed;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         inputReader = FindAnyObjectByType<InputReader>();
+        currentSpeed = moveSpeed;
     }
 
     private void Update()
@@ -43,10 +53,19 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isDashing) return; // Don't overwrite velocity during dash
+        if (isDashing) return;
 
-        float currentSpeed = inputReader.IsSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+        // Determine target speed
+        targetSpeed = inputReader.IsSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+
+        // Accelerate or decelerate towards target speed
+        float lerpRate = (targetSpeed > currentSpeed) ? acceleration : deceleration;
+        currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, lerpRate * Time.fixedDeltaTime);
+
         rb.linearVelocity = inputReader.MoveInput * currentSpeed;
+
+        // Update debug variable
+        debugCurrentSpeed = currentSpeed;
     }
 
     /// <summary>
